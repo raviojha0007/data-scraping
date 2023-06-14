@@ -8,6 +8,10 @@ const createCsvWriter = require("csv-writer").createObjectCsvWriter;
 const root = path.dirname(require.main.filename);
 
 async function ApiCall(pageNO) {
+  //  // console.log(
+  //     "APICALLL=>>>>>",
+  //     `https://www.naukri.com/jobapi/v3/search?noOfResults=20&urlType=search_by_keyword&searchType=adv&keyword=salesforce&sort=f&pageNo=${pageNO}&k=salesforce&seoKey=salesforce-jobs&src=sortby&latLong=26.2271003_78.2134235&sid=1686641506795660_2`
+  //  // );
   let axiosResponse;
   const headers = {
     headers: {
@@ -34,7 +38,7 @@ async function ApiCall(pageNO) {
   };
   try {
     axiosResponse = await axios.get(
-      `https://www.naukri.com/jobapi/v3/search?noOfResults=20&urlType=search_by_keyword&searchType=adv&keyword=salesforce&sort=f&pageNo=${pageNO}&experience=3&wfhType=2&wfhType=3&jobPostType=2&k=salesforce&nignbevent_src=jobsearchDeskGNB&experience=3&wfhType=2&wfhType=3&jobPostType=2&seoKey=salesforce-jobs&src=sortby&latLong=26.2271003_78.2134235&sid=16865704667235866`,
+      `https://www.naukri.com/jobapi/v3/search?noOfResults=100&urlType=search_by_keyword&searchType=adv&keyword=salesforce&sort=f&pageNo=${pageNO}&k=salesforce&seoKey=salesforce-jobs&src=sortby&latLong=26.2271003_78.2134235&sid=1686641506795660_2`,
       headers
     );
   } catch (error) {
@@ -48,50 +52,88 @@ module.exports = async function nuakariController(
   flag = true,
   axiosResponse = [],
   pageNO = 1,
-  arr = []
+  csvWriter
 ) {
   try {
+    let absolutePath = path.join(root, "../data.csv");
+    let arr = [];
     axiosResponse = flag === true ? await ApiCall(pageNO) : axiosResponse;
 
-    let timestamp = dateConvert();
+    //console.log("axiosResponse.data===>", axiosResponse.data);
+    const { noOfJobs, jobDetails } = axiosResponse.data;
+
+    // TimeStapm Change
+
+    function DateChnage(T) {
+      let date =
+        new Date(T).getDate() +
+        "/" +
+        (new Date(T).getMonth() + 1) +
+        "/" +
+        new Date(T).getFullYear();
+      return date;
+    }
+    if (flag === true) {
+      csvWriter = createCsvWriter({
+        path: "data.csv",
+        header: [
+          { id: "title", title: "Title" },
+          { id: "tagsAndSkills", title: "TagsAndSkills" },
+          { id: "companyName", title: "Company" },
+          { id: "currency", title: "Currency" },
+          { id: "salary", title: "Salary" },
+          { id: "location", title: "Location" },
+          { id: "experience", title: "Experience" },
+          { id: "jdURL", title: "JdURl" },
+          { id: "jobDescription", title: "Jobdescription" },
+          { id: "createdDate", title: "CreatedAt" },
+        ],
+      });
+    }
+
+    // let timestamp = dateConvert();
 
     for (const [index, value] of axiosResponse.data.jobDetails.entries()) {
-      if (value.createdDate > timestamp) {
-        arr.push(value);
-        if (arr.length === pageNO * 20) {
-          let page = pageNO++;
-          axiosResponse = await ApiCall(pageNO);
-          nuakariController(false, axiosResponse, page, arr);
+      const obj = {
+        title: value.title,
+        tagsAndSkills: value.tagsAndSkills,
+        currency: value.currency,
+        experience: value.placeholders[0]?.label?value.placeholders[0]?.label:'',
+        salary: value.placeholders[1]?.label?value.placeholders[1]?.label:'',
+        companyName: value.companyName,
+        location: value.placeholders[2]?.label?value.placeholders[2]?.label:'',
+        jdURL: value.jdURL,
+        jobDescription: value.jobDescription,
+        createdDate: DateChnage(value.createdDate),
+      };
+      arr.push(obj);
+
+      if (arr.length === axiosResponse.data.jobDetails.length) {
+        csvWriter.writeRecords(arr).then(() => {});
+        if (Number(noOfJobs) > pageNO * 100) {
+          console.log("PageNo", pageNO);
+          let page = pageNO + 1;
+          await delay(1000 * 40);
+          console.log("Page", page);
+          axiosResponse = await ApiCall(page);
+          await nuakariController(false, axiosResponse, page, csvWriter);
         }
-      } else {
-        break;
       }
     }
+
+    sendMailTemplate(
+      "mayank.agarwal@360degreecloud.in",
+      "Salesforce",
+      "nuakari data Scraping",
+      absolutePath
+    );
   } catch (error) {
     console.log("error", error);
   }
 
-  const csvWriter = createCsvWriter({
-    path: "data.csv",
-    header: [
-      { id: "title", title: "Title" },
-      { id: "tagsAndSkills", title: "TagsAndSkills" },
-      { id: "companyName", title: "Company" },
-      { id: "currency", title: "Currency" },
-      { id: "jdURL", title: "JdURl" },
-      { id: "jobDescription", title: "Jobdescription" },
-    ],
-  });
-
   //joins uploaded file path with root. replace filename with your input field name
-  var absolutePath = path.join(root, "../data.csv");
-
-  csvWriter.writeRecords(arr).then(() => {
-    // sendMailTemplate(
-    //   "ravi.ojha@360degreecloud.in",
-    //   "Salesforce",
-    //   "nuakari data Scraping",
-    //   absolutePath
-    // );
-  });
 };
+
+function delay(t) {
+  return new Promise((resolve) => setTimeout(resolve, t));
+}

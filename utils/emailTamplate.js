@@ -14,6 +14,7 @@ const path = require("path");
  */
 
 exports.sendMailTemplate = async function (to, subject, message, path) {
+  console.log("smtp")
   const oauth2Client = new OAuth2(
     process.env.clientId, // ClientID
     process.env.clientSecret, // Client Secret

@@ -22,12 +22,17 @@ exports.linkidInController = async function linkidInController() {
 
     const someReactJobHit = await jobsScroller.scrollNext();
 
+
     for (const [index, value] of someReactJobHit.entries()) {
       arr.push({
         name: value.hitInfo.jobPosting.companyDetails.company.name,
         title: value.hitInfo.jobPosting.title,
       });
+      console.log(JSON.stringify(someReactJobHit[0]))
+      break;
     }
+
+    
 
     const csvWriter = createCsvWriter({
       path: "LinkedIn.csv",

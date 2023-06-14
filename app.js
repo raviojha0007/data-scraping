@@ -7,7 +7,9 @@ const cron = require("node-cron");
 const naukariController = require("./controllers/naukari/naukariController");
 const indexRouter = require("./routes/index");
 const usersRouter = require("./routes/users");
-const { linkidInController } = require("./controllers/linkedIn/linkedInControllers");
+const {
+  linkidInController,
+} = require("./controllers/linkedIn/linkedInControllers");
 
 const app = express();
 
@@ -24,13 +26,17 @@ app.use(express.static(path.join(__dirname, "public")));
 app.use("/", indexRouter);
 app.use("/users", usersRouter);
 
+// https://www.upwork.com/search/jobs/url?q=salesforce&sort=recency&per_page=10
+
 // cron job
 
 // cron.schedule("* 30 * * *", () => {
 //   naukariController();
+//   linkidInController();
 // });
-//naukariController();
-linkidInController()
+//linkidInController();
+naukariController();
+
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
