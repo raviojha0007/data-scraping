@@ -35,7 +35,7 @@ app.use("/users", usersRouter);
 //   linkidInController();
 // });
 //linkidInController();
-naukariController();
+linkidInController();
 
 
 // catch 404 and forward to error handler
